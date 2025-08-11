@@ -31,6 +31,16 @@
     </plugin>
   </gazebo>
 
+  <!-- Odometry plugin -->
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <odom_topic>/odom</odom_topic>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+
   <!-- IMU plugin -->
   <gazebo reference="imu_link">
     <sensor name="imu_sensor" type="imu">
