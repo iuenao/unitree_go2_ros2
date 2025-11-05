@@ -11,6 +11,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     GroupAction,
     TimerAction,
+    SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -26,6 +27,9 @@ def generate_launch_description():
     unitree_go2_description = launch_ros.substitutions.FindPackageShare(
         package="unitree_go2_description").find("unitree_go2_description")
     
+    # ADD: Get disaster_models package path
+    pkg_disaster_models = get_package_share_directory('disaster_models')
+    
     joints_config = os.path.join(unitree_go2_sim, "config/joints/joints.yaml")
     ros_control_config = os.path.join(
         unitree_go2_sim, "config/ros_control/ros_control.yaml"
@@ -33,7 +37,9 @@ def generate_launch_description():
     gait_config = os.path.join(unitree_go2_sim, "config/gait/gait.yaml")
     links_config = os.path.join(unitree_go2_sim, "config/links/links.yaml")
     default_model_path = os.path.join(unitree_go2_description, "urdf/unitree_go2_robot.xacro")
-    default_world_path = os.path.join(unitree_go2_description, "worlds/default.sdf")
+    
+    # CHANGED: Use your custom world as default
+    default_world_path = os.path.join(pkg_disaster_models, "worlds/test_disaster_world.sdf")
 
     declare_use_sim_time = DeclareLaunchArgument(
         "use_sim_time",
@@ -199,16 +205,19 @@ def generate_launch_description():
     
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
     
-    # Setup to launch the simulator and Gazebo world
+    # ADD: Set Gazebo resource path for custom models (if using model:// URIs)
+    models_path = os.path.join(pkg_disaster_models, 'models')
+    gz_resource_path = SetEnvironmentVariable(
+        name='GZ_SIM_RESOURCE_PATH',
+        value=models_path
+    )
+    
+    # CHANGED: Setup to launch the simulator with your custom world
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')),
         launch_arguments={
-            'gz_args': [PathJoinSubstitution([
-                unitree_go2_description,
-                'worlds',
-                'default.sdf'
-            ]), ' -r']  # Add -r flag to start unpaused
+            'gz_args': [LaunchConfiguration('world'), ' -r']  # Use the world launch argument
         }.items(),
     )
     
@@ -311,6 +320,9 @@ def generate_launch_description():
             declare_world_init_z,
             declare_world_init_heading,
             declare_description_path, 
+            
+            # ADD: Set Gazebo resource path for custom models
+            gz_resource_path,
             
             # Gazebo and robot nodes first
             gz_sim,
